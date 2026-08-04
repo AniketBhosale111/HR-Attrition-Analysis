@@ -1,0 +1,1427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HR Attrition Analysis — BRD & FRD</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  --navy:   #0f2645;
+  --blue:   #1a5fa8;
+  --mid:    #2980b9;
+  --sky:    #e8f4fd;
+  --teal:   #0d8a7c;
+  --lteal:  #e0f5f2;
+  --purple: #6c3483;
+  --lpurple:#f3e8ff;
+  --red:    #c0392b;
+  --orange: #d35400;
+  --green:  #1e8449;
+  --lgreen: #d5f5e3;
+  --gold:   #b7791f;
+  --lgold:  #fefcbf;
+  --gray:   #f7f8fa;
+  --border: #e2e8f0;
+  --text:   #1a202c;
+  --muted:  #718096;
+  --white:  #ffffff;
+  --sidebar-w: 280px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  color: var(--text);
+  background: #f0f4f8;
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+/* ── TOP BAR ─────────────────────────────────────────────── */
+#topbar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+  height: 54px;
+  background: var(--navy);
+  display: flex; align-items: center; gap: 16px;
+  padding: 0 24px;
+  box-shadow: 0 2px 12px rgba(0,0,0,.35);
+}
+#topbar .logo {
+  font-family: 'Playfair Display', serif;
+  font-size: 17px; font-weight: 700;
+  color: #fff; letter-spacing: .3px;
+  white-space: nowrap;
+}
+#topbar .tag {
+  font-size: 11px; font-weight: 500;
+  background: var(--teal); color: #fff;
+  padding: 3px 10px; border-radius: 20px;
+  white-space: nowrap;
+}
+.topbar-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+#search-box {
+  padding: 6px 14px; border-radius: 20px;
+  border: 1px solid rgba(255,255,255,.2);
+  background: rgba(255,255,255,.1);
+  color: #fff; font-size: 13px; outline: none; width: 220px;
+  font-family: 'DM Sans', sans-serif;
+  transition: background .2s;
+}
+#search-box::placeholder { color: rgba(255,255,255,.5); }
+#search-box:focus { background: rgba(255,255,255,.18); }
+.dl-btn {
+  padding: 6px 16px; border-radius: 20px;
+  background: var(--teal); color: #fff;
+  border: none; cursor: pointer; font-size: 13px; font-weight: 500;
+  font-family: 'DM Sans', sans-serif;
+  transition: background .2s;
+}
+.dl-btn:hover { background: #0a7066; }
+#menu-toggle {
+  background: none; border: none; cursor: pointer;
+  color: #fff; font-size: 22px; display: none;
+}
+
+/* ── SIDEBAR ─────────────────────────────────────────────── */
+#sidebar {
+  position: fixed; top: 54px; left: 0; bottom: 0;
+  width: var(--sidebar-w);
+  background: var(--white);
+  border-right: 1px solid var(--border);
+  overflow-y: auto; z-index: 900;
+  display: flex; flex-direction: column;
+  transition: transform .3s;
+}
+#sidebar::-webkit-scrollbar { width: 4px; }
+#sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.part-tab {
+  display: flex; border-bottom: 2px solid var(--border);
+  position: sticky; top: 0; background: #fff; z-index: 1;
+}
+.part-tab button {
+  flex: 1; padding: 12px 8px;
+  background: none; border: none; cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px; font-weight: 600; color: var(--muted);
+  border-bottom: 3px solid transparent; margin-bottom: -2px;
+  transition: color .2s, border-color .2s;
+}
+.part-tab button.active-tab { color: var(--navy); border-color: var(--blue); }
+
+.nav-section { padding: 10px 0; }
+.nav-section-label {
+  font-size: 10px; font-weight: 700; letter-spacing: 1.2px;
+  text-transform: uppercase; color: var(--muted);
+  padding: 6px 20px 4px;
+}
+.nav-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 20px; cursor: pointer;
+  font-size: 13px; color: #4a5568;
+  border-left: 3px solid transparent;
+  transition: all .15s; text-decoration: none;
+}
+.nav-item:hover { background: var(--sky); color: var(--blue); }
+.nav-item.active { background: var(--sky); color: var(--blue); border-color: var(--blue); font-weight: 600; }
+.nav-item .num {
+  font-size: 11px; font-weight: 600;
+  background: var(--border); color: var(--muted);
+  min-width: 22px; height: 18px;
+  border-radius: 4px; display: flex; align-items: center; justify-content: center;
+}
+.nav-item.active .num { background: var(--blue); color: #fff; }
+.nav-sub { padding-left: 16px; }
+.nav-sub .nav-item { font-size: 12px; padding: 5px 20px 5px 36px; }
+
+/* ── MAIN CONTENT ────────────────────────────────────────── */
+#main {
+  margin-left: var(--sidebar-w);
+  margin-top: 54px;
+  padding: 40px 48px;
+  max-width: 960px;
+}
+
+/* ── COVER ───────────────────────────────────────────────── */
+.cover {
+  background: linear-gradient(135deg, var(--navy) 0%, #1a3f6f 60%, var(--teal) 100%);
+  border-radius: 16px; padding: 64px 56px;
+  color: #fff; margin-bottom: 48px;
+  position: relative; overflow: hidden;
+}
+.cover::before {
+  content: '';
+  position: absolute; top: -60px; right: -60px;
+  width: 300px; height: 300px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.04);
+}
+.cover::after {
+  content: '';
+  position: absolute; bottom: -40px; left: 30%;
+  width: 200px; height: 200px;
+  border-radius: 50%;
+  background: rgba(13,138,124,.15);
+}
+.cover-tag {
+  display: inline-block;
+  background: rgba(255,255,255,.15);
+  border: 1px solid rgba(255,255,255,.25);
+  color: #fff; font-size: 12px; font-weight: 600; letter-spacing: 1.5px;
+  text-transform: uppercase; padding: 5px 14px; border-radius: 20px;
+  margin-bottom: 24px; position: relative; z-index: 1;
+}
+.cover h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: 42px; font-weight: 900; line-height: 1.15;
+  margin-bottom: 12px; position: relative; z-index: 1;
+}
+.cover .subtitle {
+  font-size: 18px; opacity: .8; font-weight: 300;
+  margin-bottom: 36px; position: relative; z-index: 1;
+}
+.cover-meta {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 12px; position: relative; z-index: 1;
+}
+.cover-meta-item {
+  background: rgba(255,255,255,.1);
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: 10px; padding: 14px 16px;
+}
+.cover-meta-item .label { font-size: 11px; opacity: .6; font-weight: 500; text-transform: uppercase; letter-spacing: .8px; }
+.cover-meta-item .val { font-size: 14px; font-weight: 600; margin-top: 4px; }
+
+/* ── SECTIONS ────────────────────────────────────────────── */
+.section { display: none; animation: fadeIn .3s ease; }
+.section.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+/* ── PART BANNER ─────────────────────────────────────────── */
+.part-banner {
+  padding: 28px 36px; border-radius: 12px;
+  margin-bottom: 36px; position: relative; overflow: hidden;
+}
+.part-banner.brd { background: linear-gradient(120deg, var(--navy), var(--blue)); }
+.part-banner.frd { background: linear-gradient(120deg, #0a4a3d, var(--teal)); }
+.part-banner .part-label {
+  font-size: 11px; font-weight: 700; letter-spacing: 2px;
+  text-transform: uppercase; color: rgba(255,255,255,.6);
+  margin-bottom: 8px;
+}
+.part-banner h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: 28px; font-weight: 700; color: #fff;
+}
+.part-banner p { color: rgba(255,255,255,.75); font-size: 14px; margin-top: 6px; }
+
+/* ── CONTENT ELEMENTS ────────────────────────────────────── */
+.card {
+  background: #fff; border-radius: 12px;
+  border: 1px solid var(--border);
+  padding: 28px 32px; margin-bottom: 28px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.04);
+}
+.card-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 22px; font-weight: 700; color: var(--navy);
+  margin-bottom: 16px; padding-bottom: 12px;
+  border-bottom: 2px solid var(--border);
+  display: flex; align-items: center; gap: 10px;
+}
+.card-title .icon {
+  width: 32px; height: 32px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+}
+
+h3.sub { font-size: 16px; font-weight: 600; color: var(--blue); margin: 20px 0 10px; }
+h4.sub2 { font-size: 14px; font-weight: 600; color: var(--teal); margin: 16px 0 8px; }
+
+p.body-text { margin-bottom: 12px; color: #374151; line-height: 1.75; }
+
+/* ── KPI GRID ────────────────────────────────────────────── */
+.kpi-grid {
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;
+  margin-bottom: 28px;
+}
+.kpi-card {
+  border-radius: 12px; padding: 20px 16px;
+  color: #fff; text-align: center;
+  box-shadow: 0 4px 14px rgba(0,0,0,.15);
+  transition: transform .2s;
+}
+.kpi-card:hover { transform: translateY(-3px); }
+.kpi-card .kpi-icon { font-size: 24px; margin-bottom: 8px; }
+.kpi-card .kpi-val { font-family: 'Playfair Display', serif; font-size: 30px; font-weight: 900; line-height: 1; }
+.kpi-card .kpi-label { font-size: 11px; font-weight: 600; opacity: .85; margin-top: 6px; text-transform: uppercase; letter-spacing: .8px; }
+.kpi1 { background: linear-gradient(135deg, #1a3f6f, #1a5fa8); }
+.kpi2 { background: linear-gradient(135deg, #922b21, #c0392b); }
+.kpi3 { background: linear-gradient(135deg, #a04000, #d35400); }
+.kpi4 { background: linear-gradient(135deg, #145a32, #1e8449); }
+.kpi5 { background: linear-gradient(135deg, #0a4a3d, #0d8a7c); }
+
+/* ── TABLES ──────────────────────────────────────────────── */
+.tbl-wrap { overflow-x: auto; margin-bottom: 20px; border-radius: 8px; border: 1px solid var(--border); }
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+thead tr th {
+  background: var(--navy); color: #fff;
+  padding: 11px 14px; text-align: left;
+  font-weight: 600; font-size: 12.5px; letter-spacing: .3px;
+}
+tbody tr td { padding: 9px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+tbody tr:nth-child(even) td { background: var(--gray); }
+tbody tr:hover td { background: var(--sky); }
+.badge {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: 11.5px; font-weight: 600;
+}
+.badge-red    { background: #fee2e2; color: var(--red); }
+.badge-orange { background: #ffedd5; color: var(--orange); }
+.badge-green  { background: #dcfce7; color: var(--green); }
+.badge-blue   { background: #dbeafe; color: var(--blue); }
+.badge-purple { background: var(--lpurple); color: var(--purple); }
+.badge-gray   { background: #f1f5f9; color: #475569; }
+.badge-teal   { background: var(--lteal); color: var(--teal); }
+
+/* ── BULLET LISTS ────────────────────────────────────────── */
+ul.styled { list-style: none; margin: 10px 0; }
+ul.styled li {
+  padding: 6px 0 6px 24px; position: relative;
+  color: #374151; font-size: 14px;
+}
+ul.styled li::before {
+  content: "▸"; position: absolute; left: 4px;
+  color: var(--blue); font-size: 12px; top: 7px;
+}
+ol.styled { counter-reset: item; list-style: none; margin: 10px 0; }
+ol.styled li {
+  padding: 7px 0 7px 32px; position: relative; color: #374151; font-size: 14px;
+}
+ol.styled li::before {
+  content: counter(item); counter-increment: item;
+  position: absolute; left: 0;
+  width: 22px; height: 22px; background: var(--blue); color: #fff;
+  border-radius: 50%; font-size: 11px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  top: 8px;
+}
+
+/* ── INFO ROWS ───────────────────────────────────────────── */
+.info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+.info-item {
+  background: var(--sky); border-radius: 8px; padding: 12px 16px;
+  border-left: 4px solid var(--blue);
+}
+.info-item .ikey { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; }
+.info-item .ival { font-size: 14px; font-weight: 600; color: var(--navy); margin-top: 3px; }
+
+/* ── DIAGRAM ─────────────────────────────────────────────── */
+.diagram { background: #fff; border-radius: 12px; border: 1px solid var(--border); padding: 24px; margin-bottom: 28px; }
+.diagram-title { font-size: 14px; font-weight: 700; color: var(--navy); margin-bottom: 20px; text-align: center; }
+.flow {
+  display: flex; align-items: center; justify-content: center;
+  flex-wrap: wrap; gap: 0;
+}
+.flow-node {
+  border-radius: 10px; padding: 12px 18px;
+  font-size: 12.5px; font-weight: 600; text-align: center;
+  min-width: 110px; color: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,.15);
+}
+.flow-arrow { font-size: 20px; color: var(--muted); padding: 0 6px; }
+.flow-node.phase1 { background: #1a5fa8; }
+.flow-node.phase2 { background: #0d8a7c; }
+.flow-node.phase3 { background: #d35400; }
+.flow-node.phase4 { background: #6c3483; }
+.flow-node.phase5 { background: #1e8449; }
+
+/* workbook architecture diagram */
+.wb-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.wb-sheet {
+  border-radius: 8px; padding: 14px 12px; text-align: center;
+  font-size: 13px; font-weight: 600; border: 2px solid;
+  cursor: pointer; transition: transform .15s, box-shadow .15s;
+}
+.wb-sheet:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,.12); }
+.wb-sheet .ws-label { font-size: 10px; font-weight: 400; margin-top: 4px; opacity: .75; }
+.ws-visible  { background: #eff6ff; border-color: #2563eb; color: #1e40af; }
+.ws-protected{ background: #fef3c7; border-color: #d97706; color: #92400e; }
+.ws-hidden   { background: #f1f5f9; border-color: #94a3b8; color: #475569; }
+
+/* slicer diagram */
+.slicer-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.slicer-box {
+  border-radius: 8px; padding: 10px 12px;
+  background: var(--lpurple); border: 1px solid #d8b4fe;
+  font-size: 12.5px; font-weight: 600; color: var(--purple); text-align: center;
+}
+.slicer-box .slicer-id { font-size: 10px; font-weight: 400; color: #7c3aed; margin-bottom: 3px; }
+
+/* chart preview cards */
+.chart-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 20px; }
+.chart-card {
+  border-radius: 10px; border: 1px solid var(--border);
+  padding: 16px 14px; background: #fff;
+  cursor: pointer; transition: all .15s;
+}
+.chart-card:hover { border-color: var(--blue); box-shadow: 0 4px 14px rgba(26,95,168,.15); }
+.chart-card .chart-thumb {
+  height: 80px; border-radius: 6px; margin-bottom: 10px;
+  display: flex; align-items: flex-end; justify-content: center; gap: 4px;
+  padding: 8px;
+}
+.chart-card .chart-title { font-size: 12.5px; font-weight: 600; color: var(--navy); }
+.chart-card .chart-type  { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.bar { border-radius: 3px 3px 0 0; width: 14px; }
+
+/* risk matrix */
+.risk-matrix { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.risk-card {
+  border-radius: 8px; padding: 14px 16px;
+  border-left: 4px solid;
+}
+.risk-critical { border-color: var(--red); background: #fee2e2; }
+.risk-high     { border-color: var(--orange); background: #ffedd5; }
+.risk-medium   { border-color: #eab308; background: #fef9c3; }
+.risk-low      { border-color: var(--green); background: var(--lgreen); }
+.risk-card .risk-id { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; opacity: .7; }
+.risk-card .risk-name { font-size: 13px; font-weight: 600; margin: 4px 0; }
+.risk-card .risk-badge { font-size: 11px; }
+
+/* progress timeline */
+.timeline { position: relative; padding-left: 28px; }
+.timeline::before { content: ''; position: absolute; left: 10px; top: 0; bottom: 0; width: 2px; background: var(--border); }
+.tl-item { position: relative; margin-bottom: 24px; }
+.tl-item::before {
+  content: ''; position: absolute; left: -22px; top: 4px;
+  width: 14px; height: 14px; border-radius: 50%;
+  background: var(--blue); border: 3px solid #fff;
+  box-shadow: 0 0 0 2px var(--blue);
+}
+.tl-header { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.tl-badge {
+  background: var(--blue); color: #fff;
+  font-size: 11px; font-weight: 700; padding: 2px 10px; border-radius: 12px;
+}
+.tl-title { font-size: 14px; font-weight: 600; color: var(--navy); }
+.tl-desc { font-size: 13px; color: var(--muted); }
+.tl-deliverable {
+  margin-top: 6px; display: inline-flex; align-items: center; gap: 6px;
+  background: var(--lgreen); color: var(--green);
+  font-size: 12px; font-weight: 500; padding: 3px 10px; border-radius: 6px;
+}
+
+/* data validation */
+.validation-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.val-item {
+  border-radius: 8px; padding: 12px 14px;
+  background: var(--gray); border: 1px solid var(--border);
+  display: flex; gap: 10px; align-items: flex-start;
+}
+.val-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+.val-label { font-size: 12.5px; font-weight: 600; color: var(--navy); }
+.val-desc  { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+/* notice boxes */
+.notice {
+  border-radius: 10px; padding: 14px 18px;
+  display: flex; gap: 12px; align-items: flex-start;
+  margin-bottom: 16px;
+}
+.notice.info    { background: var(--sky); border: 1px solid #bfdbfe; }
+.notice.warn    { background: #fffbeb; border: 1px solid #fde68a; }
+.notice.success { background: var(--lgreen); border: 1px solid #86efac; }
+.notice-icon { font-size: 20px; flex-shrink: 0; }
+.notice-text { font-size: 13.5px; color: var(--text); line-height: 1.6; }
+
+/* formula block */
+.formula-block {
+  background: #0f172a; color: #7dd3fc;
+  border-radius: 8px; padding: 14px 18px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12.5px; margin: 10px 0;
+  overflow-x: auto; line-height: 1.8;
+}
+.formula-block .comment { color: #94a3b8; }
+.formula-block .fn { color: #34d399; }
+.formula-block .str { color: #fbbf24; }
+
+/* ── APPROVAL TABLE ──────────────────────────────────────── */
+.approval-row td { padding: 14px 16px; }
+.sig-line { border-bottom: 1px dashed #94a3b8; display: block; min-width: 160px; height: 28px; }
+
+/* ── SEARCH HIGHLIGHT ────────────────────────────────────── */
+.highlight { background: #fef08a; border-radius: 2px; }
+
+/* ── PRINT ───────────────────────────────────────────────── */
+@media print {
+  #topbar, #sidebar { display: none; }
+  #main { margin: 0; padding: 20px; max-width: none; }
+  .section { display: block !important; page-break-before: auto; }
+  .part-banner { break-before: page; }
+}
+
+/* ── RESPONSIVE ──────────────────────────────────────────── */
+@media (max-width: 900px) {
+  #menu-toggle { display: block; }
+  #sidebar { transform: translateX(-100%); }
+  #sidebar.open { transform: translateX(0); }
+  #main { margin-left: 0; padding: 24px 20px; }
+  .kpi-grid { grid-template-columns: repeat(3, 1fr); }
+  .cover-meta { grid-template-columns: repeat(2, 1fr); }
+  .chart-grid { grid-template-columns: repeat(2, 1fr); }
+  .wb-grid { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div id="topbar">
+  <button id="menu-toggle" onclick="toggleMenu()">☰</button>
+  <div class="logo">HR Attrition Analytics</div>
+  <span class="tag">BRD + FRD</span>
+  <div class="topbar-right">
+    <input id="search-box" type="text" placeholder="Search document…" oninput="searchDoc(this.value)" onkeydown="if(event.key==='Escape')clearSearch()">
+    <button class="dl-btn" onclick="window.print()">⎙ Print / Save PDF</button>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<nav id="sidebar">
+  <div class="part-tab">
+    <button class="active-tab" onclick="switchPart('brd', this)">Part A — BRD</button>
+    <button onclick="switchPart('frd', this)">Part B — FRD</button>
+  </div>
+
+  <div id="brd-nav">
+    <div class="nav-section">
+      <div class="nav-section-label">Overview</div>
+      <a class="nav-item active" onclick="goto('cover')">
+        <span class="num">🏠</span> Cover Page
+      </a>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-label">Business Requirements</div>
+      <a class="nav-item" onclick="goto('b1')"><span class="num">1</span> Executive Summary</a>
+      <a class="nav-item" onclick="goto('b2')"><span class="num">2</span> Objectives</a>
+      <a class="nav-item" onclick="goto('b3')"><span class="num">3</span> Project Scope</a>
+      <a class="nav-item" onclick="goto('b4')"><span class="num">4</span> Stakeholders</a>
+      <a class="nav-item" onclick="goto('b5')"><span class="num">5</span> KPIs</a>
+      <a class="nav-item" onclick="goto('b6')"><span class="num">6</span> Business Reqs</a>
+      <a class="nav-item" onclick="goto('b7')"><span class="num">7</span> Assumptions & Risks</a>
+      <a class="nav-item" onclick="goto('b8')"><span class="num">8</span> Timeline</a>
+      <a class="nav-item" onclick="goto('b9')"><span class="num">9</span> BRD Approval</a>
+    </div>
+  </div>
+
+  <div id="frd-nav" style="display:none">
+    <div class="nav-section">
+      <div class="nav-section-label">Functional Requirements</div>
+      <a class="nav-item" onclick="goto('f1')"><span class="num">F1</span> System Overview</a>
+      <a class="nav-item" onclick="goto('f2')"><span class="num">F2</span> Data Model</a>
+      <a class="nav-item" onclick="goto('f3')"><span class="num">F3</span> KPI Implementation</a>
+      <a class="nav-item" onclick="goto('f4')"><span class="num">F4</span> Chart Specifications</a>
+      <a class="nav-item" onclick="goto('f5')"><span class="num">F5</span> Slicer & Filters</a>
+      <a class="nav-item" onclick="goto('f6')"><span class="num">F6</span> Dashboard Layout</a>
+      <a class="nav-item" onclick="goto('f7')"><span class="num">F7</span> Data Security</a>
+      <a class="nav-item" onclick="goto('f8')"><span class="num">F8</span> Data Refresh</a>
+      <a class="nav-item" onclick="goto('f9')"><span class="num">F9</span> Testing & QA</a>
+      <a class="nav-item" onclick="goto('f10')"><span class="num">F10</span> Error Handling</a>
+      <a class="nav-item" onclick="goto('f11')"><span class="num">✓</span> FRD Approval</a>
+    </div>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<main id="main">
+
+  <!-- COVER -->
+  <div id="cover" class="section active">
+    <div class="cover">
+      <div class="cover-tag">Combined BRD + FRD — Version 1.0</div>
+      <h1>HR Employee Attrition<br>Analysis Project</h1>
+      <div class="subtitle">Business &amp; Functional Requirements Document</div>
+      <div class="cover-meta">
+        <div class="cover-meta-item"><div class="label">Project</div><div class="val">Attrition Dashboard</div></div>
+        <div class="cover-meta-item"><div class="label">Tool</div><div class="val">Microsoft Excel</div></div>
+        <div class="cover-meta-item"><div class="label">Version</div><div class="val">1.0 — March 2026</div></div>
+        <div class="cover-meta-item"><div class="label">Owner</div><div class="val">HR Analytics Team</div></div>
+        <div class="cover-meta-item"><div class="label">Status</div><div class="val">Approved ✓</div></div>
+        <div class="cover-meta-item"><div class="label">Classification</div><div class="val">Confidential</div></div>
+      </div>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi-card kpi1"><div class="kpi-icon">👥</div><div class="kpi-val">2,069</div><div class="kpi-label">Total Employees</div></div>
+      <div class="kpi-card kpi2"><div class="kpi-icon">📉</div><div class="kpi-val">237</div><div class="kpi-label">Attrition Count</div></div>
+      <div class="kpi-card kpi3"><div class="kpi-icon">%</div><div class="kpi-val">16.1%</div><div class="kpi-label">Attrition Rate</div></div>
+      <div class="kpi-card kpi4"><div class="kpi-icon">✅</div><div class="kpi-val">1,832</div><div class="kpi-label">Active Employees</div></div>
+      <div class="kpi-card kpi5"><div class="kpi-icon">🎂</div><div class="kpi-val">36.9</div><div class="kpi-label">Avg Age (yrs)</div></div>
+    </div>
+
+    <div class="notice info">
+      <div class="notice-icon">📋</div>
+      <div class="notice-text"><strong>How to use this document:</strong> Use the left sidebar to navigate between Part A (Business Requirements) and Part B (Functional Requirements). Use the search bar to find specific terms. Click <strong>Print / Save PDF</strong> to export a full copy.</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ PART A — BRD ═══════════════════ -->
+
+  <!-- B1: Executive Summary -->
+  <div id="b1" class="section">
+    <div class="part-banner brd"><div class="part-label">Part A — Business Requirements Document</div><h2>1. Executive Summary</h2><p>Business context, problem statement, and project background</p></div>
+    <div class="card">
+      <div class="card-title"><div class="icon" style="background:#dbeafe">📊</div> Project Overview</div>
+      <p class="body-text">This BRD defines the business needs, objectives, scope, and requirements for the HR Employee Attrition Analysis Project. The project delivers an interactive Excel-based dashboard enabling HR leadership and business stakeholders to monitor, analyze, and take action on employee attrition trends across the organization.</p>
+      <p class="body-text">The organization has experienced significant employee turnover impacting operational continuity, recruitment costs, and organizational knowledge retention. This project addresses the critical need for data-driven insights into attrition patterns to enable proactive workforce management.</p>
+      <h3 class="sub">1.1 Problem Statement</h3>
+      <ul class="styled">
+        <li>High employee turnover rate with insufficient visibility into root causes</li>
+        <li>Manual and inconsistent attrition reporting across departments</li>
+        <li>Inability to identify at-risk employee segments proactively</li>
+        <li>Lack of standardized KPIs to track HR health metrics</li>
+        <li>No centralized view correlating attrition with compensation, satisfaction, and tenure</li>
+        <li>Limited ability to benchmark attrition by department, gender, age, or job role</li>
+      </ul>
+      <h3 class="sub">1.2 Project Background</h3>
+      <p class="body-text">The HR department maintains a comprehensive employee dataset covering 2,000+ employees across multiple departments, roles, age groups, and locations. Currently, attrition reporting is manual, time-consuming, and lacks the visual and interactive capabilities needed for rapid decision-making.</p>
+      <div class="info-grid">
+        <div class="info-item"><div class="ikey">Dataset Records</div><div class="ival">~2,069 Employees</div></div>
+        <div class="info-item"><div class="ikey">Departments</div><div class="ival">R&amp;D, Sales, HR</div></div>
+        <div class="info-item"><div class="ikey">Attributes per Employee</div><div class="ival">50+ Fields</div></div>
+        <div class="info-item"><div class="ikey">Analysis Period</div><div class="ival">Current Dataset Snapshot</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- B2: Objectives -->
+  <div id="b2" class="section">
+    <div class="part-banner brd"><div class="part-label">Part A — BRD</div><h2>2. Business Objectives & Success Criteria</h2></div>
+    <div class="card">
+      <div class="card-title"><div class="icon" style="background:#d1fae5">🎯</div> Business Objectives</div>
+      <ol class="styled">
+        <li>Develop an interactive, self-service HR analytics dashboard with real-time visibility into attrition trends</li>
+        <li>Establish standardized KPIs and metrics for monitoring workforce health and attrition risk</li>
+        <li>Enable HR leadership to make data-driven decisions regarding retention strategies and hiring plans</li>
+        <li>Identify key drivers of attrition including departmental, demographic, and role-based factors</li>
+        <li>Reduce time spent on manual attrition reporting by at least <strong>70%</strong> through automated visualizations</li>
+        <li>Support strategic workforce planning with trend analysis and predictive indicators</li>
+      </ol>
+    </div>
+    <div class="card">
+      <div class="card-title"><div class="icon" style="background:#fef3c7">📏</div> 2.1 Success Criteria</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Metric</th><th>Target</th><th>Measurement Method</th></tr></thead>
+          <tbody>
+            <tr><td>Dashboard Adoption</td><td><span class="badge badge-green">90% of HR team weekly</span></td><td>Login &amp; interaction tracking</td></tr>
+            <tr><td>Reporting Time Reduction</td><td><span class="badge badge-blue">Reduce by 70%</span></td><td>Time-motion comparison</td></tr>
+            <tr><td>KPI Accuracy</td><td><span class="badge badge-green">100% match source data</span></td><td>Data validation audit</td></tr>
+            <tr><td>Stakeholder Satisfaction</td><td><span class="badge badge-blue">≥ 4.5 / 5.0</span></td><td>Post-deployment survey</td></tr>
+            <tr><td>Attrition Insights</td><td><span class="badge badge-orange">3 actions/quarter</span></td><td>Management review meeting</td></tr>
+            <tr><td>Data Refresh Cycle</td><td><span class="badge badge-gray">Monthly</span></td><td>Dashboard version log</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- B3: Scope -->
+  <div id="b3" class="section">
+    <div class="part-banner brd"><div class="part-label">Part A — BRD</div><h2>3. Project Scope</h2></div>
+    <div class="card">
+      <div class="card-title"><div class="icon" style="background:#d1fae5">✅</div> 3.1 In Scope</div>
+      <ul class="styled">
+        <li>Interactive Excel dashboard with 5 Key Performance Indicators (KPIs)</li>
+        <li>Attrition analysis across all departments: R&amp;D, Sales, HR</li>
+        <li>Gender-wise attrition rate visualization and comparison</li>
+        <li>Department-level attrition breakdown and trending</li>
+        <li>Age group segmentation: Under 25 / 25-34 / 35-44 / 45-54 / Over 55</li>
+        <li>Employee status: Current Employees vs. Ex-Employees</li>
+        <li>Job role-level attrition analysis across all 9 job titles</li>
+        <li>Travel frequency impact analysis on attrition</li>
+        <li>Education field and degree level correlation</li>
+        <li>Marital status impact analysis</li>
+        <li>Interactive slicers and filters for dynamic data exploration</li>
+        <li>Formatted, print-ready reporting views</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-title"><div class="icon" style="background:#fee2e2">🚫</div> 3.2 Out of Scope</div>
+      <ul class="styled">
+        <li>Predictive machine learning models for attrition forecasting</li>
+        <li>Real-time integration with HRIS systems</li>
+        <li>Employee-level individual PII reporting</li>
+        <li>Automated email alerting or notification systems</li>
+        <li>Mobile application development</li>
+        <li>Integration with payroll, benefits, or recruiting systems</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-title"><div class="icon" style="background:#ede9fe">📂</div> 3.3 Dataset Overview</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Attribute</th><th>Details</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Total Records</strong></td><td>~2,069 employee records</td></tr>
+            <tr><td><strong>Attrition Status</strong></td><td>Binary: Yes (Ex-Employees) / No (Current Employees)</td></tr>
+            <tr><td><strong>Departments</strong></td><td>R&amp;D, Sales, HR (3 departments)</td></tr>
+            <tr><td><strong>Job Roles</strong></td><td>9 distinct roles incl. Sales Executive, Research Scientist, Lab Technician, etc.</td></tr>
+            <tr><td><strong>Age Groups</strong></td><td>Under 25, 25-34, 35-44, 45-54, Over 55</td></tr>
+            <tr><td><strong>Education Fields</strong></td><td>Life Sciences, Medical, Marketing, Technical Degree, Human Resources, Other</td></tr>
+            <tr><td><strong>Key Numeric Fields</strong></td><td>Age, Monthly Income, Hourly Rate, Years at Company, Job Satisfaction (1–4)</td></tr>
+            <tr><td><strong>Travel Categories</strong></td><td>Non-Travel, Travel_Rarely, Travel_Frequently</td></tr>
+            <tr><td><strong>Gender</strong></td><td>Male, Female</td></tr>
+            <tr><td><strong>Marital Status</strong></td><td>Single, Married, Divorced</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- B4: Stakeholders -->
+  <div id="b4" class="section">
+    <div class="part-banner brd"><div class="part-label">Part A — BRD</div><h2>4. Stakeholders</h2></div>
+    <div class="card">
+      <div class="card-title"><div class="icon" style="background:#dbeafe">👥</div> Stakeholder Register</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Stakeholder</th><th>Role</th><th>Interest</th><th>Influence</th></tr></thead>
+          <tbody>
+            <tr><td><strong>CHRO / HR Director</strong></td><td>Executive Sponsor</td><td>Strategic workforce decisions, attrition cost reduction</td><td><span class="badge badge-red">High</span></td></tr>
+            <tr><td><strong>HR Business Partners</strong></td><td>Primary Users</td><td>Department-level insights for retention conversations</td><td><span class="badge badge-red">High</span></td></tr>
+            <tr><td><strong>Talent Acquisition</strong></td><td>Secondary Users</td><td>Hiring forecasting based on attrition trends</td><td><span class="badge badge-orange">Medium</span></td></tr>
+            <tr><td><strong>Department Managers</strong></td><td>Decision Makers</td><td>Team-level attrition visibility and action planning</td><td><span class="badge badge-red">High</span></td></tr>
+            <tr><td><strong>Compensation &amp; Benefits</strong></td><td>Contributing Users</td><td>Salary benchmarking and attrition correlation</td><td><span class="badge badge-orange">Medium</span></td></tr>
+            <tr><td><strong>Finance Team</strong></td><td>Stakeholder</td><td>Attrition cost impact and workforce budget planning</td><td><span class="badge badge-orange">Medium</span></td></tr>
+            <tr><td><strong>HR Analytics Analyst</strong></td><td>Project Owner</td><td>Dashboard build, data maintenance, reporting</td><td><span class="badge badge-red">High</span></td></tr>
+            <tr><td><strong>IT / Data Team</strong></td><td>Support</td><td>Data governance, file access, refresh processes</td><td><span class="badge badge-gray">Low</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- B5: KPIs -->
+  <div id="b5" class="section">
+    <div class="part-banner brd"><div class="part-label">Part A — BRD</div><h2>5. Key Performance Indicators</h2></div>
+    <div class="kpi-grid" style="margin-bottom:28px">
+      <div class="kpi-card kpi1"><div class="kpi-icon">👥</div><div class="kpi-val">KPI 1</div><div class="kpi-label">Total Employees</div></div>
+      <div class="kpi-card kpi2"><div class="kpi-icon">📉</div><div class="kpi-val">KPI 2</div><div class="kpi-label">Attrition Count</div></div>
+      <div class="kpi-card kpi3"><div class="kpi-icon">%</div><div class="kpi-val">KPI 3</div><div class="kpi-label">Attrition Rate</div></div>
+      <div class="kpi-card kpi4"><div class="kpi-icon">✅</div><div class="kpi-val">KPI 4</div><div class="kpi-label">Active Employees</div></div>
+      <div class="kpi-card kpi5"><div class="kpi-icon">🎂</div><div class="kpi-val">KPI 5</div><div class="kpi-label">Avg. Employee Age</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><div class="icon" style="background:#fef3c7">📐</div> KPI Definitions</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>KPI</th><th>Name</th><th>Definition</th><th>Data Source</th><th>Format</th></tr></thead>
+          <tbody>
+            <tr><td><span class="badge badge-blue">KPI 1</span></td><td><strong>Total Employees</strong></td><td>Count of all employee records</td><td>EmployeeNumber (COUNTA)</td><td>#,##0</td></tr>
+            <tr><td><span class="badge badge-red">KPI 2</span></td><td><strong>Attrition Count</strong></td><td>Count where Attrition = "Yes"</td><td>COUNTIF(Attrition, "Yes")</td><td>#,##0</td></tr>
+            <tr><td><span class="badge badge-orange">KPI 3</span></td><td><strong>Attrition Rate %</strong></td><td>KPI2 ÷ KPI1 × 100</td><td>Calculated formula</td><td>0.00%</td></tr>
+            <tr><td><span class="badge badge-green">KPI 4</span></td><td><strong>Active Employees</strong></td><td>Count where Attrition = "No"</td><td>COUNTIF(Attrition, "No")</td><td>#,##0</td></tr>
+            <tr><td><span class="badge badge-teal">KPI 5</span></td><td><strong>Avg. Employee Age</strong></td><td>Mean age of all employees</td><td>AVERAGEIF on Age field</td><td>0.0 yrs</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- B6: Business Requirements -->
+  <div id="b6" class="section">
+    <div class="part-banner brd"><div class="part-label">Part A — BRD</div><h2>6. Business Requirements</h2></div>
+    <div class="card">
+      <div class="card-title"><div class="icon" style="background:#dbeafe">📊</div> 6.1 Dashboard Visual Requirements</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Req ID</th><th>Requirement</th><th>Priority</th></tr></thead>
+          <tbody>
+            <tr><td><code>BR-001</code></td><td>5 KPI cards at top of main dashboard view, visually distinct</td><td><span class="badge badge-red">Must Have</span></td></tr>
+            <tr><td><code>BR-002</code></td><td>Gender-wise attrition chart comparing Male vs. Female rates</td><td><span class="badge badge-red">Must Have</span></td></tr>
+            <tr><td><code>BR-003</code></td><td>Department attrition: count + percentage for R&amp;D, Sales, HR</td><td><span class="badge badge-red">Must Have</span></td></tr>
+            <tr><td><code>BR-004</code></td><td>Age group distribution chart across 5 age bands</td><td><span class="badge badge-red">Must Have</span></td></tr>
+            <tr><td><code>BR-005</code></td><td>Job role analysis displaying attrition for all 9 job titles</td><td><span class="badge badge-red">Must Have</span></td></tr>
+            <tr><td><code>BR-006</code></td><td>Consistent color scheme aligned to HR branding</td><td><span class="badge badge-orange">Should Have</span></td></tr>
+            <tr><td><code>BR-007</code></td><td>Date/version stamp showing last data refresh</td><td><span class="badge badge-orange">Should Have</span></td></tr>
+            <tr><td><code>BR-008</code></td><td>Data labels on all charts for immediate readability</td><td><span class="badge badge-red">Must Have</span></td></tr>
+            <tr><td><code>BR-009</code></td><td>Education field attrition chart (6 education backgrounds)</td><td><span class="badge badge-orange">Should Have</span></td></tr>
+            <tr><td><code>BR-010</code></td><td>Marital status vs. attrition chart</td><td><span class="badge badge-gray">Could Have</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><div class="icon" style="background:#ede9fe">🖱️</div> 6.2 Interactivity Requirements</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Req ID</th><th>Requirement</th><th>Priority</th></tr></thead>
+          <tbody>
+            <tr><td><code>BR-011</code></td><td>Interactive slicer for Department filtering</td><td><span class="badge badge-red">Must Have</span></td></tr>
+            <tr><td><code>BR-012</code></td><td>Interactive slicer for Gender filtering</td><td><span class="badge badge-red">Must Have</span></td></tr>
+            <tr><td><code>BR-013</code></td><td>Interactive slicer for Age Group filtering</td><td><span class="badge badge-red">Must Have</span></td></tr>
+            <tr><td><code>BR-014</code></td><td>Interactive slicer for Education Field</td><td><span class="badge badge-orange">Should Have</span></td></tr>
+            <tr><td><code>BR-015</code></td><td>All charts dynamically update when slicers are applied</td><td><span class="badge badge-red">Must Have</span></td></tr>
+            <tr><td><code>BR-016</code></td><td>KPI cards recalculate dynamically based on slicer selection</td><td><span class="badge badge-red">Must Have</span></td></tr>
+            <tr><td><code>BR-017</code></td><td>Clear All Filters button with single action</td><td><span class="badge badge-orange">Should Have</span></td></tr>
+            <tr><td><code>BR-018</code></td><td>Travel frequency slicer</td><td><span class="badge badge-orange">Should Have</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><div class="icon" style="background:#d1fae5">🗄️</div> 6.3 Data Requirements</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Req ID</th><th>Requirement</th><th>Priority</th></tr></thead>
+          <tbody>
+            <tr><td><code>BR-019</code></td><td>Source data must include all employee attributes without modification</td><td><span class="badge badge-red">Must Have</span></td></tr>
+            <tr><td><code>BR-020</code></td><td>Attrition field consistently coded as Yes/No across all records</td><td><span class="badge badge-red">Must Have</span></td></tr>
+            <tr><td><code>BR-021</code></td><td>No PII exposed in dashboard views</td><td><span class="badge badge-red">Must Have</span></td></tr>
+            <tr><td><code>BR-022</code></td><td>Data validated for completeness before each refresh</td><td><span class="badge badge-red">Must Have</span></td></tr>
+            <tr><td><code>BR-023</code></td><td>Pivot tables hidden from end users</td><td><span class="badge badge-orange">Should Have</span></td></tr>
+            <tr><td><code>BR-024</code></td><td>Raw data protected with analyst-only edit permissions</td><td><span class="badge badge-orange">Should Have</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- B7: Assumptions & Risks -->
+  <div id="b7" class="section">
+    <div class="part-banner brd"><div class="part-label">Part A — BRD</div><h2>7. Assumptions, Constraints &amp; Risks</h2></div>
+    <div class="card">
+      <div class="card-title"><div class="icon" style="background:#fef3c7">📌</div> 7.1 Assumptions</div>
+      <ul class="styled">
+        <li>All stakeholders have Microsoft Excel 2016 or later with full feature support</li>
+        <li>The provided dataset is a complete and accurate extract of the HR system of record</li>
+        <li>Department codes, job roles, and education field values are standardized</li>
+        <li>The HR Analytics Analyst has sufficient Excel skills to maintain the dashboard</li>
+        <li>Data refresh will occur manually on a monthly cadence</li>
+        <li>Dashboard will be distributed as a read-only Excel file to end users</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-title"><div class="icon" style="background:#fee2e2">⚠️</div> 7.2 Constraints</div>
+      <ul class="styled">
+        <li>Solution must be built entirely within Microsoft Excel (no Power BI, Tableau, or external tools)</li>
+        <li>Dataset is static — no live database or API connectivity required</li>
+        <li>File size must remain under 50 MB for email distribution</li>
+        <li>No VBA macros required for basic functionality</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-title"><div class="icon" style="background:#fee2e2">🛡️</div> 7.3 Risk Register</div>
+      <div class="risk-matrix">
+        <div class="risk-card risk-high"><div class="risk-id">R-001</div><div class="risk-name">Data quality issues affecting KPI accuracy</div><div class="risk-badge"><span class="badge badge-orange">Medium Likelihood</span> <span class="badge badge-red">High Impact</span></div></div>
+        <div class="risk-card risk-high"><div class="risk-id">R-002</div><div class="risk-name">Stakeholder disagreement on KPI definitions</div><div class="risk-badge"><span class="badge badge-orange">Medium Likelihood</span> <span class="badge badge-red">High Impact</span></div></div>
+        <div class="risk-card risk-medium"><div class="risk-id">R-003</div><div class="risk-name">Dashboard performance with large dataset</div><div class="risk-badge"><span class="badge badge-green">Low Likelihood</span> <span class="badge badge-orange">Medium Impact</span></div></div>
+        <div class="risk-card risk-high"><div class="risk-id">R-004</div><div class="risk-name">Unauthorized access to employee data</div><div class="risk-badge"><span class="badge badge-green">Low Likelihood</span> <span class="badge badge-red">High Impact</span></div></div>
+        <div class="risk-card risk-medium"><div class="risk-id">R-005</div><div class="risk-name">User adoption resistance to new tool</div><div class="risk-badge"><span class="badge badge-orange">Medium Likelihood</span> <span class="badge badge-orange">Medium Impact</span></div></div>
+        <div class="risk-card risk-low"><div class="risk-id">R-006</div><div class="risk-name">Monthly data refresh not completed</div><div class="risk-badge"><span class="badge badge-orange">Medium Likelihood</span> <span class="badge badge-green">Low Impact</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- B8: Timeline -->
+  <div id="b8" class="section">
+    <div class="part-banner brd"><div class="part-label">Part A — BRD</div><h2>8. Project Timeline</h2></div>
+    <div class="card">
+      <div class="card-title"><div class="icon" style="background:#dbeafe">🗓️</div> Phase Flow Diagram</div>
+      <div class="flow" style="margin-bottom:24px">
+        <div class="flow-node phase1">Phase 1<br><small>Discovery</small></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node phase2">Phase 2<br><small>Data Prep</small></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node phase3">Phase 3<br><small>Build</small></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node phase4">Phase 4<br><small>UAT</small></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node phase5">Phase 5<br><small>Deploy</small></div>
+      </div>
+      <div class="timeline">
+        <div class="tl-item">
+          <div class="tl-header"><span class="tl-badge">1 Week</span><span class="tl-title">Phase 1 — Discovery</span></div>
+          <div class="tl-desc">Stakeholder interviews, KPI definition sign-off, data review and assessment</div>
+          <span class="tl-deliverable">📄 Approved KPI Register</span>
+        </div>
+        <div class="tl-item">
+          <div class="tl-header"><span class="tl-badge">1 Week</span><span class="tl-title">Phase 2 — Data Preparation</span></div>
+          <div class="tl-desc">Data cleaning, validation, pivot table setup, field mapping and calculated columns</div>
+          <span class="tl-deliverable">🗄️ Clean Data Model</span>
+        </div>
+        <div class="tl-item">
+          <div class="tl-header"><span class="tl-badge">2 Weeks</span><span class="tl-title">Phase 3 — Dashboard Build</span></div>
+          <div class="tl-desc">KPI card development, chart creation, slicer setup, color scheme, formatting</div>
+          <span class="tl-deliverable">📊 Dashboard Draft v1</span>
+        </div>
+        <div class="tl-item">
+          <div class="tl-header"><span class="tl-badge">1 Week</span><span class="tl-title">Phase 4 — User Acceptance Testing</span></div>
+          <div class="tl-desc">Stakeholder review, feedback incorporation, bug fixes, validation checks</div>
+          <span class="tl-deliverable">✅ UAT Sign-off</span>
+        </div>
+        <div class="tl-item">
+          <div class="tl-header"><span class="tl-badge">3 Days</span><span class="tl-title">Phase 5 — Deployment</span></div>
+          <div class="tl-desc">Final distribution, user training sessions, documentation and user guide handover</div>
+          <span class="tl-deliverable">🚀 Live Dashboard + User Guide</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- B9: BRD Approval -->
+  <div id="b9" class="section">
+    <div class="part-banner brd"><div class="part-label">Part A — BRD</div><h2>9. BRD Approval Sign-off</h2></div>
+    <div class="card">
+      <div class="card-title"><div class="icon" style="background:#d1fae5">✍️</div> Document Approval</div>
+      <p class="body-text">This BRD requires review and approval from the following stakeholders before project initiation:</p>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Name</th><th>Role</th><th>Signature</th><th>Date</th></tr></thead>
+          <tbody class="approval-row">
+            <tr><td>&nbsp;</td><td><strong>CHRO / Executive Sponsor</strong></td><td><span class="sig-line"></span></td><td>&nbsp;</td></tr>
+            <tr><td>&nbsp;</td><td><strong>HR Business Partner Lead</strong></td><td><span class="sig-line"></span></td><td>&nbsp;</td></tr>
+            <tr><td>&nbsp;</td><td><strong>HR Analytics Analyst</strong></td><td><span class="sig-line"></span></td><td>&nbsp;</td></tr>
+            <tr><td>&nbsp;</td><td><strong>IT / Data Governance</strong></td><td><span class="sig-line"></span></td><td>&nbsp;</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="notice success" style="margin-top:16px">
+        <div class="notice-icon">✅</div>
+        <div class="notice-text">By signing above, stakeholders confirm they have reviewed and approved this BRD and authorize the project to proceed to functional requirements and development.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ PART B — FRD ═══════════════════ -->
+
+  <!-- F1: System Overview -->
+  <div id="f1" class="section">
+    <div class="part-banner frd"><div class="part-label">Part B — Functional Requirements Document</div><h2>F1. System Overview</h2><p>Workbook architecture and system structure specification</p></div>
+    <div class="card">
+      <div class="card-title"><div class="icon" style="background:#d1fae5">🏗️</div> F1.1 Workbook Architecture</div>
+      <p class="body-text">The system is a single Microsoft Excel workbook structured across multiple sheets. Each sheet has a defined purpose, visibility level, and protection rule:</p>
+      <div class="wb-grid" style="margin:20px 0">
+        <div class="wb-sheet ws-visible">📊 Dashboard<div class="ws-label">Visible — Read Only</div></div>
+        <div class="wb-sheet ws-protected">🗃️ Raw Data<div class="ws-label">Protected — Analyst Only</div></div>
+        <div class="wb-sheet ws-hidden">⚙️ Pivot Tables<div class="ws-label">Hidden — System Use</div></div>
+        <div class="wb-sheet ws-hidden">🔢 KPI Calcs<div class="ws-label">Hidden — System Use</div></div>
+        <div class="wb-sheet ws-hidden">📈 Chart Data<div class="ws-label">Hidden — System Use</div></div>
+        <div class="wb-sheet ws-visible">📖 Data Dictionary<div class="ws-label">Visible — Reference</div></div>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Sheet</th><th>Type</th><th>Purpose</th><th>Visibility</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Dashboard</strong></td><td>Report</td><td>Main interactive view — KPIs, charts, slicers</td><td><span class="badge badge-green">Visible</span></td></tr>
+            <tr><td><strong>Raw Data</strong></td><td>Data</td><td>Source employee dataset — all records &amp; attributes</td><td><span class="badge badge-orange">Protected</span></td></tr>
+            <tr><td><strong>Pivot Tables</strong></td><td>Calculation</td><td>All pivot tables feeding charts and KPI cards</td><td><span class="badge badge-gray">Hidden</span></td></tr>
+            <tr><td><strong>KPI Calcs</strong></td><td>Calculation</td><td>Formula-based KPI calculation worksheet</td><td><span class="badge badge-gray">Hidden</span></td></tr>
+            <tr><td><strong>Chart Data</strong></td><td>Calculation</td><td>Processed arrays for custom chart types</td><td><span class="badge badge-gray">Hidden</span></td></tr>
+            <tr><td><strong>Data Dictionary</strong></td><td>Reference</td><td>Field definitions, data types, valid values</td><td><span class="badge badge-green">Visible</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- F2: Data Model -->
+  <div id="f2" class="section">
+    <div class="part-banner frd"><div class="part-label">Part B — FRD</div><h2>F2. Data Model Specification</h2></div>
+    <div class="card">
+      <div class="card-title"><div class="icon" style="background:#d1fae5">🗄️</div> F2.1 Source Data Schema</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Field Name</th><th>Type</th><th>Values / Range</th><th>Used In</th></tr></thead>
+          <tbody>
+            <tr><td><code>Attrition</code></td><td>Text</td><td>Yes / No</td><td>All KPIs, all charts</td></tr>
+            <tr><td><code>Age</code></td><td>Integer</td><td>18 – 60</td><td>KPI 5, Age Group charts</td></tr>
+            <tr><td><code>AgeGroup</code></td><td>Calculated</td><td>Under 25 / 25-34 / 35-44 / 45-54 / Over 55</td><td>Age distribution chart</td></tr>
+            <tr><td><code>BusinessTravel</code></td><td>Text</td><td>Non-Travel / Travel_Rarely / Travel_Frequently</td><td>Travel slicer</td></tr>
+            <tr><td><code>Department</code></td><td>Text</td><td>R&amp;D / Sales / HR</td><td>Dept chart, slicer</td></tr>
+            <tr><td><code>EducationField</code></td><td>Text</td><td>Life Sciences / Medical / Marketing / Technical Degree / HR / Other</td><td>Education field chart</td></tr>
+            <tr><td><code>Gender</code></td><td>Text</td><td>Male / Female</td><td>Gender chart, slicer</td></tr>
+            <tr><td><code>JobRole</code></td><td>Text</td><td>9 distinct values</td><td>Job role chart</td></tr>
+            <tr><td><code>MaritalStatus</code></td><td>Text</td><td>Single / Married / Divorced</td><td>Marital chart, slicer</td></tr>
+            <tr><td><code>MonthlyIncome</code></td><td>Integer</td><td>Currency range</td><td>Salary analysis</td></tr>
+            <tr><td><code>YearsAtCompany</code></td><td>Integer</td><td>0 – 40</td><td>Tenure analysis</td></tr>
+            <tr><td><code>JobSatisfaction</code></td><td>Integer</td><td>1 – 4</td><td>Satisfaction chart</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><div class="icon" style="background:#ede9fe">🔧</div> F2.2 Calculated Fields</div>
+      <div class="formula-block">
+<span class="comment">// AgeGroup — Calculated column in Raw Data sheet</span>
+<span class="fn">=IF</span>(Age&lt;25,<span class="str">"Under 25"</span>,<span class="fn">IF</span>(Age&lt;35,<span class="str">"25-34"</span>,
+  <span class="fn">IF</span>(Age&lt;45,<span class="str">"35-44"</span>,<span class="fn">IF</span>(Age&lt;55,<span class="str">"45-54"</span>,<span class="str">"Over 55"</span>))))
+
+<span class="comment">// AttritionBinary — Numeric flag for rate calculations</span>
+<span class="fn">=IF</span>(Attrition=<span class="str">"Yes"</span>,1,0)
+
+<span class="comment">// IncomeGroup — Salary banding</span>
+<span class="fn">=IF</span>(Income&lt;3000,<span class="str">"Low"</span>,<span class="fn">IF</span>(Income&lt;7000,<span class="str">"Mid"</span>,
+  <span class="fn">IF</span>(Income&lt;12000,<span class="str">"High"</span>,<span class="str">"Senior"</span>)))
+
+<span class="comment">// TenureGroup — Years at company banding</span>
+<span class="fn">=IF</span>(Years&lt;=2,<span class="str">"0-2 Yrs"</span>,<span class="fn">IF</span>(Years&lt;=5,<span class="str">"3-5 Yrs"</span>,
+  <span class="fn">IF</span>(Years&lt;=10,<span class="str">"6-10 Yrs"</span>,<span class="str">"10+ Yrs"</span>)))
+      </div>
+    </div>
+  </div>
+
+  <!-- F3: KPI Implementation -->
+  <div id="f3" class="section">
+    <div class="part-banner frd"><div class="part-label">Part B — FRD</div><h2>F3. KPI Implementation Specifications</h2></div>
+    <div class="card">
+      <div class="card-title"><div class="icon" style="background:#fef3c7">🔢</div> KPI Formulas &amp; Card Design</div>
+      <div class="formula-block">
+<span class="comment">// KPI 1 — Total Employees</span>
+<span class="fn">=COUNTA</span>(RawData[EmployeeNumber])  <span class="comment">→ Format: #,##0 | Card: Dark Blue #1F4E79</span>
+
+<span class="comment">// KPI 2 — Attrition Count</span>
+<span class="fn">=COUNTIF</span>(RawData[Attrition],<span class="str">"Yes"</span>)   <span class="comment">→ Format: #,##0 | Card: Red #C0392B</span>
+
+<span class="comment">// KPI 3 — Attrition Rate %</span>
+<span class="fn">=IF</span>(KPI1=0,0,KPI2/KPI1*100)         <span class="comment">→ Format: 0.00% | Card: Orange #E67E22</span>
+
+<span class="comment">// KPI 4 — Active Employees</span>
+<span class="fn">=COUNTIF</span>(RawData[Attrition],<span class="str">"No"</span>)    <span class="comment">→ Format: #,##0 | Card: Green #27AE60</span>
+
+<span class="comment">// KPI 5 — Average Employee Age</span>
+<span class="fn">=AVERAGEIF</span>(RawData[Attrition],<span class="str">"*"</span>,RawData[Age])  <span class="comment">→ Format: 0.0 "yrs" | Card: Teal #16A085</span>
+      </div>
+      <h3 class="sub">Card Layout Rules</h3>
+      <ul class="styled">
+        <li>5 cards arranged horizontally across dashboard full width (Row 5–14)</li>
+        <li>Card title: 11pt Bold Calibri on colored background</li>
+        <li>Metric value: 22pt Bold, white text on colored background</li>
+        <li>Cards dynamically update via pivot table measures when slicers change</li>
+        <li>Thick accent border line below each card</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- F4: Charts -->
+  <div id="f4" class="section">
+    <div class="part-banner frd"><div class="part-label">Part B — FRD</div><h2>F4. Chart Specifications</h2></div>
+    <div class="chart-grid">
+      <div class="chart-card">
+        <div class="chart-thumb" style="background:#f0f7ff">
+          <div class="bar" style="height:50px;background:#2980b9"></div>
+          <div class="bar" style="height:35px;background:#e74c3c"></div>
+          <div class="bar" style="height:20px;background:#27ae60"></div>
+        </div>
+        <div class="chart-title">Chart 1: Dept Attrition</div>
+        <div class="chart-type">Clustered Bar Chart</div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-thumb" style="background:#fff5f5;align-items:center;justify-content:center">
+          <svg width="70" height="70" viewBox="0 0 70 70"><circle cx="35" cy="35" r="30" fill="none" stroke="#2471a3" stroke-width="12" stroke-dasharray="94 96"/><circle cx="35" cy="35" r="30" fill="none" stroke="#d35400" stroke-width="12" stroke-dasharray="66 124" stroke-dashoffset="-94"/></svg>
+        </div>
+        <div class="chart-title">Chart 2: Gender Rate</div>
+        <div class="chart-type">Donut Chart</div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-thumb" style="background:#f0fff4">
+          <div class="bar" style="height:20px;background:#4fc3f7"></div>
+          <div class="bar" style="height:55px;background:#1976d2"></div>
+          <div class="bar" style="height:45px;background:#0d47a1"></div>
+          <div class="bar" style="height:30px;background:#003d8c"></div>
+          <div class="bar" style="height:15px;background:#001a5e"></div>
+        </div>
+        <div class="chart-title">Chart 3: Age Groups</div>
+        <div class="chart-type">Column Chart</div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-thumb" style="background:#fafafa;flex-direction:column;align-items:flex-start;gap:5px;padding:10px">
+          <div style="height:10px;width:70%;background:#2c3e50;border-radius:2px"></div>
+          <div style="height:10px;width:55%;background:#34495e;border-radius:2px"></div>
+          <div style="height:10px;width:80%;background:#2c3e50;border-radius:2px"></div>
+          <div style="height:10px;width:40%;background:#34495e;border-radius:2px"></div>
+        </div>
+        <div class="chart-title">Chart 4: Job Roles</div>
+        <div class="chart-type">Horizontal Bar</div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-thumb" style="background:#fff8f0;align-items:center;justify-content:center">
+          <svg width="70" height="70" viewBox="0 0 70 70">
+            <circle cx="35" cy="35" r="30" fill="none" stroke="#2980b9" stroke-width="14" stroke-dasharray="56 133"/>
+            <circle cx="35" cy="35" r="30" fill="none" stroke="#e74c3c" stroke-width="14" stroke-dasharray="37 152" stroke-dashoffset="-56"/>
+            <circle cx="35" cy="35" r="30" fill="none" stroke="#f39c12" stroke-width="14" stroke-dasharray="26 163" stroke-dashoffset="-93"/>
+            <circle cx="35" cy="35" r="30" fill="none" stroke="#27ae60" stroke-width="14" stroke-dasharray="14 175" stroke-dashoffset="-119"/>
+          </svg>
+        </div>
+        <div class="chart-title">Chart 5: Education</div>
+        <div class="chart-type">Pie Chart</div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-thumb" style="background:#f5f0ff">
+          <div class="bar" style="height:60px;background:#6c3483"></div>
+          <div class="bar" style="height:40px;background:#9b59b6"></div>
+          <div class="bar" style="height:35px;background:#c39bd3"></div>
+        </div>
+        <div class="chart-title">Chart 6: Marital Status</div>
+        <div class="chart-type">Column Chart</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><div class="icon" style="background:#dbeafe">📊</div> Chart Specification Details</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Chart</th><th>Type</th><th>X / Categories</th><th>Y / Values</th><th>Linked Slicers</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Chart 1</strong></td><td>Clustered Bar</td><td>R&amp;D, Sales, HR</td><td>Count Attrition=Yes</td><td>Dept, Gender</td></tr>
+            <tr><td><strong>Chart 2</strong></td><td>Donut Chart</td><td>Male, Female</td><td>Attrition rate %</td><td>All slicers</td></tr>
+            <tr><td><strong>Chart 3</strong></td><td>Column Chart</td><td>5 age bands</td><td>Count per age group</td><td>Dept, Gender, Edu</td></tr>
+            <tr><td><strong>Chart 4</strong></td><td>Horizontal Bar</td><td>9 job roles (sorted desc)</td><td>Count attrited</td><td>Dept, Gender, Age</td></tr>
+            <tr><td><strong>Chart 5</strong></td><td>Pie / Treemap</td><td>6 education fields</td><td>Count per edu field</td><td>Dept, Gender</td></tr>
+            <tr><td><strong>Chart 6</strong></td><td>Column Chart</td><td>Single, Married, Divorced</td><td>Count per status</td><td>Dept, Gender, Age</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- F5: Slicers -->
+  <div id="f5" class="section">
+    <div class="part-banner frd"><div class="part-label">Part B — FRD</div><h2>F5. Slicer &amp; Filter Specifications</h2></div>
+    <div class="card">
+      <div class="card-title"><div class="icon" style="background:#ede9fe">🔽</div> Slicer Diagram</div>
+      <div class="slicer-grid" style="margin-bottom:20px">
+        <div class="slicer-box"><div class="slicer-id">SL-001</div>Department</div>
+        <div class="slicer-box"><div class="slicer-id">SL-002</div>Gender</div>
+        <div class="slicer-box"><div class="slicer-id">SL-003</div>Age Group</div>
+        <div class="slicer-box"><div class="slicer-id">SL-004</div>Education Field</div>
+        <div class="slicer-box"><div class="slicer-id">SL-005</div>Business Travel</div>
+        <div class="slicer-box"><div class="slicer-id">SL-006</div>Marital Status</div>
+        <div class="slicer-box"><div class="slicer-id">SL-007</div>Job Role</div>
+        <div class="slicer-box"><div class="slicer-id">SL-008</div>Attrition Status</div>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>ID</th><th>Field</th><th>Default</th><th>Affects</th></tr></thead>
+          <tbody>
+            <tr><td><code>SL-001</code></td><td>Department</td><td>All selected</td><td>All charts and KPIs</td></tr>
+            <tr><td><code>SL-002</code></td><td>Gender</td><td>All selected</td><td>All charts and KPIs</td></tr>
+            <tr><td><code>SL-003</code></td><td>AgeGroup</td><td>All selected</td><td>All charts and KPIs</td></tr>
+            <tr><td><code>SL-004</code></td><td>EducationField</td><td>All selected</td><td>Charts 3, 4, 5</td></tr>
+            <tr><td><code>SL-005</code></td><td>BusinessTravel</td><td>All selected</td><td>All charts and KPIs</td></tr>
+            <tr><td><code>SL-006</code></td><td>MaritalStatus</td><td>All selected</td><td>Chart 6, KPIs</td></tr>
+            <tr><td><code>SL-007</code></td><td>JobRole</td><td>All selected</td><td>Chart 4, KPIs</td></tr>
+            <tr><td><code>SL-008</code></td><td>Attrition</td><td>All selected</td><td>All charts and KPIs</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3 class="sub">Behavior Rules</h3>
+      <ul class="styled">
+        <li>All slicers connected to the same PivotCache for synchronized filtering</li>
+        <li>Default state: All items selected (no filter applied)</li>
+        <li>Clear All Filters button placed above slicer panel</li>
+        <li>Custom slicer style: dark blue header, white items, blue selected state</li>
+        <li>Multi-select enabled on all slicers via Ctrl+click</li>
+        <li>Slicer headers display human-readable labels</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- F6: Dashboard Layout -->
+  <div id="f6" class="section">
+    <div class="part-banner frd"><div class="part-label">Part B — FRD</div><h2>F6. Dashboard Layout Specification</h2></div>
+    <div class="card">
+      <div class="card-title"><div class="icon" style="background:#dbeafe">📐</div> Layout Grid Diagram</div>
+      <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:20px;font-size:12px">
+        <div style="background:var(--navy);color:#fff;padding:10px 16px;font-weight:700">DASHBOARD LAYOUT (Row × Column Grid)</div>
+        <div style="padding:12px">
+          <div style="background:linear-gradient(90deg,#1a5fa8,#2980b9);color:#fff;padding:8px 12px;border-radius:6px;margin-bottom:6px;text-align:center;font-weight:600">🏷️ Header Banner — Rows 1–3: Title, Logo, Last Refresh Date</div>
+          <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-bottom:6px">
+            <div style="background:#e74c3c;color:#fff;padding:8px;border-radius:6px;text-align:center;font-size:11px;font-weight:700">KPI 1</div>
+            <div style="background:#e67e22;color:#fff;padding:8px;border-radius:6px;text-align:center;font-size:11px;font-weight:700">KPI 2</div>
+            <div style="background:#1e8449;color:#fff;padding:8px;border-radius:6px;text-align:center;font-size:11px;font-weight:700">KPI 3</div>
+            <div style="background:#0d8a7c;color:#fff;padding:8px;border-radius:6px;text-align:center;font-size:11px;font-weight:700">KPI 4</div>
+            <div style="background:#1a5fa8;color:#fff;padding:8px;border-radius:6px;text-align:center;font-size:11px;font-weight:700">KPI 5</div>
+          </div>
+          <div style="display:grid;grid-template-columns:3fr 1fr;gap:8px;margin-bottom:6px">
+            <div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px">
+                <div style="background:#dbeafe;border:1px solid #93c5fd;padding:12px;border-radius:6px;text-align:center;font-weight:600;color:#1e40af">📊 Chart 1<br>Dept Attrition</div>
+                <div style="background:#fee2e2;border:1px solid #fca5a5;padding:12px;border-radius:6px;text-align:center;font-weight:600;color:#991b1b">🍩 Chart 2<br>Gender Rate</div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px">
+                <div style="background:#d1fae5;border:1px solid #6ee7b7;padding:12px;border-radius:6px;text-align:center;font-weight:600;color:#065f46">📊 Chart 3<br>Age Groups</div>
+                <div style="background:#f3e8ff;border:1px solid #d8b4fe;padding:12px;border-radius:6px;text-align:center;font-weight:600;color:#5b21b6">📊 Chart 4<br>Job Roles</div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+                <div style="background:#fef3c7;border:1px solid #fcd34d;padding:12px;border-radius:6px;text-align:center;font-weight:600;color:#92400e">🥧 Chart 5<br>Education</div>
+                <div style="background:#e0f2fe;border:1px solid #7dd3fc;padding:12px;border-radius:6px;text-align:center;font-weight:600;color:#0c4a6e">📊 Chart 6<br>Marital Status</div>
+              </div>
+            </div>
+            <div style="background:#f5f3ff;border:1px dashed #a78bfa;border-radius:8px;padding:12px;text-align:center">
+              <div style="font-weight:700;color:#5b21b6;margin-bottom:10px;font-size:12px">🔽 SLICERS</div>
+              <div style="display:flex;flex-direction:column;gap:4px">
+                <div style="background:#ede9fe;border-radius:4px;padding:5px 8px;font-size:10px;font-weight:600;color:#6d28d9">Department</div>
+                <div style="background:#ede9fe;border-radius:4px;padding:5px 8px;font-size:10px;font-weight:600;color:#6d28d9">Gender</div>
+                <div style="background:#ede9fe;border-radius:4px;padding:5px 8px;font-size:10px;font-weight:600;color:#6d28d9">Age Group</div>
+                <div style="background:#ede9fe;border-radius:4px;padding:5px 8px;font-size:10px;font-weight:600;color:#6d28d9">Education</div>
+                <div style="background:#ede9fe;border-radius:4px;padding:5px 8px;font-size:10px;font-weight:600;color:#6d28d9">Travel</div>
+                <div style="background:#ede9fe;border-radius:4px;padding:5px 8px;font-size:10px;font-weight:600;color:#6d28d9">Marital</div>
+                <div style="background:#ede9fe;border-radius:4px;padding:5px 8px;font-size:10px;font-weight:600;color:#6d28d9">Job Role</div>
+                <div style="background:#ede9fe;border-radius:4px;padding:5px 8px;font-size:10px;font-weight:600;color:#6d28d9">Attrition</div>
+              </div>
+            </div>
+          </div>
+          <div style="background:#f1f5f9;border:1px solid var(--border);padding:8px 12px;border-radius:6px;text-align:center;color:var(--muted);font-size:11px">Footer — Data Source Note | Version | Developer</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- F7: Security -->
+  <div id="f7" class="section">
+    <div class="part-banner frd"><div class="part-label">Part B — FRD</div><h2>F7. Data Security &amp; Sheet Protection</h2></div>
+    <div class="card">
+      <div class="card-title"><div class="icon" style="background:#fee2e2">🔒</div> Sheet Protection Rules</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Sheet</th><th>Protection</th><th>Allowed Actions</th><th>Password</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Dashboard</strong></td><td><span class="badge badge-blue">Protected</span></td><td>Interact with slicers, scroll, read charts</td><td><span class="badge badge-gray">No</span></td></tr>
+            <tr><td><strong>Raw Data</strong></td><td><span class="badge badge-orange">Protected + Hidden</span></td><td>Analyst-only access</td><td><span class="badge badge-red">Yes</span></td></tr>
+            <tr><td><strong>Pivot Tables</strong></td><td><span class="badge badge-gray">Hidden + Protected</span></td><td>No user access</td><td><span class="badge badge-red">Yes</span></td></tr>
+            <tr><td><strong>KPI Calcs</strong></td><td><span class="badge badge-gray">Hidden + Protected</span></td><td>No user access</td><td><span class="badge badge-red">Yes</span></td></tr>
+            <tr><td><strong>Data Dictionary</strong></td><td><span class="badge badge-green">Unprotected</span></td><td>Full read access, no edit</td><td><span class="badge badge-gray">No</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3 class="sub">Data Handling Rules</h3>
+      <ul class="styled">
+        <li>Employee ID (EmployeeNumber) must never appear on the Dashboard sheet</li>
+        <li>Minimum group size rule: segments with &lt;5 employees show "N/A — Insufficient Data"</li>
+        <li>Data refresh performed by authorized HR analyst only</li>
+        <li>Distributed copies must have Raw Data sheet hidden and protected</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- F8: Data Refresh -->
+  <div id="f8" class="section">
+    <div class="part-banner frd"><div class="part-label">Part B — FRD</div><h2>F8. Data Refresh Procedure</h2></div>
+    <div class="card">
+      <div class="card-title"><div class="icon" style="background:#d1fae5">🔄</div> Monthly Refresh Steps</div>
+      <ol class="styled">
+        <li>Export updated HR dataset from HRIS in CSV or Excel format</li>
+        <li>Open dashboard workbook with analyst credentials</li>
+        <li>Navigate to Raw Data sheet and unlock with analyst password</li>
+        <li>Delete existing data from Row 2 downward (preserve header row)</li>
+        <li>Paste new data into Raw Data sheet starting from Row 2</li>
+        <li>Verify row count matches expected employee count (sanity check)</li>
+        <li>Navigate to Pivot Tables sheet — right-click — Refresh All</li>
+        <li>Return to Dashboard and verify KPI cards show updated values</li>
+        <li>Update "Last Refresh Date" cell in dashboard header</li>
+        <li>Save file and re-apply sheet protection</li>
+        <li>Distribute updated file via approved channel</li>
+      </ol>
+    </div>
+    <div class="card">
+      <div class="card-title"><div class="icon" style="background:#fef3c7">✅</div> Data Validation Checks</div>
+      <div class="validation-grid">
+        <div class="val-item"><div class="val-icon">🔢</div><div><div class="val-label">V-001: Row Count</div><div class="val-desc">Total records match HRIS export count</div></div></div>
+        <div class="val-item"><div class="val-icon">🔤</div><div><div class="val-label">V-002: Attrition Values</div><div class="val-desc">Only "Yes" or "No" values present</div></div></div>
+        <div class="val-item"><div class="val-icon">🏢</div><div><div class="val-label">V-003: Department Values</div><div class="val-desc">Only R&amp;D / Sales / HR accepted</div></div></div>
+        <div class="val-item"><div class="val-icon">📅</div><div><div class="val-label">V-004: Age Range</div><div class="val-desc">All values between 18 and 65</div></div></div>
+        <div class="val-item"><div class="val-icon">➕</div><div><div class="val-label">V-005: KPI Consistency</div><div class="val-desc">Active + Attrited = Total Employees</div></div></div>
+        <div class="val-item"><div class="val-icon">🆔</div><div><div class="val-label">V-006: No Blank IDs</div><div class="val-desc">All rows have unique Employee Number</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- F9: Testing -->
+  <div id="f9" class="section">
+    <div class="part-banner frd"><div class="part-label">Part B — FRD</div><h2>F9. Testing &amp; Quality Assurance</h2></div>
+    <div class="card">
+      <div class="card-title"><div class="icon" style="background:#d1fae5">🧪</div> Test Scenarios</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Test ID</th><th>Description</th><th>Expected Result</th><th>Priority</th></tr></thead>
+          <tbody>
+            <tr><td><code>T-001</code></td><td>KPI 1 = COUNTA of all records</td><td>Matches row count − 1 (header)</td><td><span class="badge badge-red">Critical</span></td></tr>
+            <tr><td><code>T-002</code></td><td>KPI 2 = count of Attrition=Yes</td><td>Matches raw COUNTIF result</td><td><span class="badge badge-red">Critical</span></td></tr>
+            <tr><td><code>T-003</code></td><td>KPI 3 = KPI2/KPI1 × 100</td><td>Mathematically consistent</td><td><span class="badge badge-red">Critical</span></td></tr>
+            <tr><td><code>T-004</code></td><td>Department slicer = R&amp;D only</td><td>All charts &amp; KPIs show R&amp;D data only</td><td><span class="badge badge-red">Critical</span></td></tr>
+            <tr><td><code>T-005</code></td><td>Gender slicer = Female only</td><td>KPIs recalculate to female subset</td><td><span class="badge badge-orange">High</span></td></tr>
+            <tr><td><code>T-006</code></td><td>Age Group slicer = 25-34</td><td>Age chart highlights 25-34 band</td><td><span class="badge badge-orange">High</span></td></tr>
+            <tr><td><code>T-007</code></td><td>Clear all filters</td><td>KPIs return to full dataset values</td><td><span class="badge badge-red">Critical</span></td></tr>
+            <tr><td><code>T-008</code></td><td>Open on Excel 2016</td><td>All charts &amp; slicers display correctly</td><td><span class="badge badge-orange">High</span></td></tr>
+            <tr><td><code>T-009</code></td><td>Print preview</td><td>Fits A4/Letter landscape page</td><td><span class="badge badge-gray">Medium</span></td></tr>
+            <tr><td><code>T-010</code></td><td>No PII on dashboard</td><td>No employee IDs or names visible</td><td><span class="badge badge-red">Critical</span></td></tr>
+            <tr><td><code>T-011</code></td><td>Data refresh with updated dataset</td><td>Pivot tables refresh; KPIs update</td><td><span class="badge badge-red">Critical</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- F10: Error Handling -->
+  <div id="f10" class="section">
+    <div class="part-banner frd"><div class="part-label">Part B — FRD</div><h2>F10. Error Handling &amp; Edge Cases</h2></div>
+    <div class="card">
+      <div class="card-title"><div class="icon" style="background:#fef3c7">⚠️</div> Formula Error Prevention</div>
+      <div class="formula-block">
+<span class="comment">// Wrap all calculations in IFERROR</span>
+<span class="fn">=IFERROR</span>(COUNTIF(Attrition,<span class="str">"Yes"</span>),0)
+
+<span class="comment">// Always check denominator before division</span>
+<span class="fn">=IF</span>(KPI1=0,0,KPI2/KPI1*100)
+
+<span class="comment">// Use named ranges for variable-length data</span>
+RawData[Attrition]  <span class="comment">→ expands automatically with new rows</span>
+      </div>
+      <h3 class="sub" style="margin-top:20px">Edge Case Handling</h3>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Edge Case</th><th>Scenario</th><th>Handling Approach</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Zero attrition dept</strong></td><td>HR dept has 0 attrition</td><td>Chart shows 0; no division errors via IFERROR</td></tr>
+            <tr><td><strong>Single gender selected</strong></td><td>Only Male in slicer</td><td>Female bar hidden or shows 0; no chart crash</td></tr>
+            <tr><td><strong>All items deselected</strong></td><td>User deselects all slicer items</td><td>Dashboard shows 0 with informational note</td></tr>
+            <tr><td><strong>New job role in refresh</strong></td><td>New role added to dataset</td><td>Pivot auto-expands; chart resizes accordingly</td></tr>
+            <tr><td><strong>Negative income value</strong></td><td>Data entry error in source</td><td>IFERROR shows N/A for affected calculations</td></tr>
+            <tr><td><strong>Small segment (&lt;5 employees)</strong></td><td>Very small demographic group</td><td>Show "N/A — Insufficient Data" to prevent identification</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- F11: FRD Approval -->
+  <div id="f11" class="section">
+    <div class="part-banner frd"><div class="part-label">Part B — FRD</div><h2>FRD Approval Sign-off</h2></div>
+    <div class="card">
+      <div class="card-title"><div class="icon" style="background:#d1fae5">✍️</div> FRD Document Approval</div>
+      <p class="body-text">This FRD requires review and approval from the following stakeholders before development begins:</p>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Name</th><th>Role</th><th>Signature</th><th>Date</th></tr></thead>
+          <tbody class="approval-row">
+            <tr><td>&nbsp;</td><td><strong>HR Analytics Lead / Dashboard Developer</strong></td><td><span class="sig-line"></span></td><td>&nbsp;</td></tr>
+            <tr><td>&nbsp;</td><td><strong>CHRO / Project Sponsor</strong></td><td><span class="sig-line"></span></td><td>&nbsp;</td></tr>
+            <tr><td>&nbsp;</td><td><strong>QA / UAT Lead</strong></td><td><span class="sig-line"></span></td><td>&nbsp;</td></tr>
+            <tr><td>&nbsp;</td><td><strong>IT / Data Governance</strong></td><td><span class="sig-line"></span></td><td>&nbsp;</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="notice success" style="margin-top:16px">
+        <div class="notice-icon">✅</div>
+        <div class="notice-text">By signing, all parties confirm this Combined BRD &amp; FRD accurately captures requirements for the HR Attrition Analysis Dashboard and authorize development to proceed.</div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+// ── NAVIGATION ──────────────────────────────────────────────
+let currentPart = 'brd';
+
+function goto(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const sec = document.getElementById(id);
+  if (sec) { sec.classList.add('active'); sec.scrollIntoView({behavior:'smooth', block:'start'}); }
+  event && event.currentTarget && event.currentTarget.classList.add('active');
+  if (window.innerWidth <= 900) document.getElementById('sidebar').classList.remove('open');
+}
+
+function switchPart(part, btn) {
+  currentPart = part;
+  document.querySelectorAll('.part-tab button').forEach(b => b.classList.remove('active-tab'));
+  btn.classList.add('active-tab');
+  document.getElementById('brd-nav').style.display = part === 'brd' ? 'block' : 'none';
+  document.getElementById('frd-nav').style.display = part === 'frd' ? 'block' : 'none';
+  // Auto-navigate to first section of the part
+  if (part === 'brd') goto('cover');
+  else goto('f1');
+}
+
+function toggleMenu() {
+  document.getElementById('sidebar').classList.toggle('open');
+}
+
+// ── SEARCH ──────────────────────────────────────────────────
+let searchTimeout;
+function searchDoc(val) {
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => {
+    clearHighlights();
+    if (!val.trim() || val.length < 2) return;
+    const main = document.getElementById('main');
+    const walk = (node) => {
+      if (node.nodeType === 3) {
+        const idx = node.textContent.toLowerCase().indexOf(val.toLowerCase());
+        if (idx >= 0) {
+          const span = document.createElement('mark');
+          span.className = 'highlight';
+          const after = node.splitText(idx);
+          after.splitText(val.length);
+          node.parentNode.insertBefore(span, after);
+          span.appendChild(after.cloneNode());
+          after.parentNode.removeChild(after);
+        }
+      } else if (node.nodeType === 1 && !['SCRIPT','STYLE','MARK'].includes(node.tagName)) {
+        Array.from(node.childNodes).forEach(walk);
+      }
+    };
+    walk(main);
+    const first = main.querySelector('.highlight');
+    if (first) {
+      // Show the section that contains it
+      let el = first;
+      while (el && el !== main) {
+        if (el.classList && el.classList.contains('section')) {
+          document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+          el.classList.add('active');
+          break;
+        }
+        el = el.parentElement;
+      }
+      first.scrollIntoView({behavior:'smooth', block:'center'});
+    }
+  }, 300);
+}
+
+function clearSearch() {
+  document.getElementById('search-box').value = '';
+  clearHighlights();
+}
+
+function clearHighlights() {
+  document.querySelectorAll('mark.highlight').forEach(m => {
+    m.replaceWith(document.createTextNode(m.textContent));
+  });
+}
+
+// ── KEYBOARD SHORTCUTS ───────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+    e.preventDefault();
+    document.getElementById('search-box').focus();
+  }
+});
+
+// ── ACTIVE NAV HIGHLIGHT ─────────────────────────────────────
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', function() {
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+</script>
+</body>
+</html>
