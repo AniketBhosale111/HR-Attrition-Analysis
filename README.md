@@ -7,3 +7,22 @@ for this project I have used HR employee's dataset contains 1500+ employees reco
 ## Microsoft Excel 
 performed this project using Microsoft excel using many formulas Xlookup,Vlookup, Data validation and applied conditional formatting 
 and analyzed data using Pivot Table 
+# Project Overflow 
+- Data Understanding
+- Data extraction using EXCEL
+- data cleaning
+- EDA process using pivot tables and graphs
+- data analysis
+- data visualization (dashboard creation, KPI)
+- Prediction/ Recommendation
+
+# projects Key insights and problems Statement 
+- why leaves employee company?
+- what is Attrition rate
+- what are total Employees are currently working and leaved employee?
+- department wise attrition rate
+- job role wise attrition rate
+- Gender Wise Attrition rate
+- Attrition rate
+- average Employee age
+- employee with Attritions 
