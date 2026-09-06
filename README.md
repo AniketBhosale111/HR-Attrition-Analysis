@@ -10,7 +10,7 @@ and analyzed data using Pivot Table
 # Project Overflow 
 - Data Understanding
 - Data extraction using EXCEL
-- data cleaning
+- data cleaning (null, duplicates, missing values, clean text, datatype)  
 - EDA process using pivot tables and graphs
 - data analysis
 - data visualization (dashboard creation, KPI)
