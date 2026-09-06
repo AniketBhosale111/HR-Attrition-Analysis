@@ -25,4 +25,13 @@ and analyzed data using Pivot Table
 - Gender Wise Attrition rate
 - Attrition rate
 - average Employee age
-- employee with Attritions 
+- employee with Attritions
+# Importance KPI 
+| KPI                          |           Value |
+| ---------------------------- | --------------: |
+| **Total Employees**          |       **1,470** |
+| **Employees with Attrition** |         **237** |
+| **Current Employees**        |       **1,233** |
+| **Average Employee Age**     | **36.92 Years** |
+| **Attrition Rate**           |      **16.12%** |
+
